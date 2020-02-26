@@ -2,9 +2,13 @@
 
 import sys
 
+MUL = 0b10100010
+ADD = 0b10100000
 LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
+PSH = 0b01000101
+POP = 0b01000110
 
 class CPU:
     """Main CPU class."""
@@ -19,17 +23,16 @@ class CPU:
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        path = sys.argv[1]
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        file = open(path)
+        program_file = file.readlines()
+        program = []
+        for line in program_file:
+            if line[0] == '#' or line[0] == '\n':
+                pass
+            else:
+                program.append(int(line[:8], 2))
 
         for instruction in program:
             self.ram[address] = instruction
@@ -41,7 +44,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -74,26 +80,51 @@ class CPU:
     def run(self):
         """Run the CPU."""
         pc = self.pc
+        SP = 0xF3
+
         while True:
-            command = self.ram[pc]
-            if command == HLT:
+            IR = self.ram[pc]
+            if IR == HLT:
                 break
-            elif command == LDI:
+            elif IR == LDI:
                 opa = self.ram[pc + 1]
                 opb = self.ram[pc + 2]
                 pc += 3
                 self.reg[opa] = opb
 
-            elif command == PRN:
+            elif IR == PRN:
                 reg_loc = self.ram[pc + 1]
                 print(self.reg[reg_loc])
+                pc += 2
+
+            elif IR == ADD:
+                opa = self.ram[pc + 1]
+                opb = self.ram[pc + 2]
+                self.alu('ADD', opa, opb)
+                pc += 3
+
+            elif IR == MUL:
+                opa = self.ram[pc + 1]
+                opb = self.ram[pc + 2]
+                self.alu('MUL', opa, opb)
+                pc += 3
+
+            elif IR == PSH:
+                opa = self.ram[pc + 1]
+                self.ram[SP] = self.reg[opa]
+                SP -= 1
+                pc += 2
+
+
+            elif IR == POP:
+                opa = self.ram[pc + 1]
+                SP += 1
+                self.reg[opa] = self.ram[SP]
                 pc += 2
 
 
 
 
-ls8 = CPU()
-
-ls8.load()
-
-ls8.run()
+cpu = CPU()
+cpu.load()
+cpu.run()
