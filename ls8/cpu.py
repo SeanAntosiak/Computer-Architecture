@@ -9,6 +9,8 @@ PRN = 0b01000111
 HLT = 0b00000001
 PSH = 0b01000101
 POP = 0b01000110
+CAL = 0b01010000
+RET = 0b00010001
 
 class CPU:
     """Main CPU class."""
@@ -115,14 +117,21 @@ class CPU:
                 SP -= 1
                 pc += 2
 
-
             elif IR == POP:
                 opa = self.ram[pc + 1]
                 SP += 1
                 self.reg[opa] = self.ram[SP]
                 pc += 2
 
+            elif IR == CAL:
+                opa = self.ram[pc + 1]
+                self.ram[SP] = pc + 2
+                SP -= 1
+                pc = self.reg[opa]
 
+            elif IR == RET:
+                SP += 1
+                pc = self.ram[SP]
 
 
 cpu = CPU()
